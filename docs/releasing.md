@@ -13,14 +13,14 @@ together. Historical compatibility entries remain in `versions.json`.
 ## Manual launch gates
 
 - [x] Validate desktop Live Preview, Reading View, and Source-mode navigation.
-- [ ] Validate actual iOS and Android devices: add/edit/complete/delete, menus,
+- [x] Validate actual iOS and Android devices: add/edit/complete/delete, menus,
   native date picking, source-note selection, keyboard submission/cancel,
   narrow panes, and touch targets.
-- [ ] Check light and dark themes, keyboard focus, and reduced-motion behavior.
-- [ ] Check startup, disable/re-enable, rename, and multiple panes without draft loss.
-- [ ] Review screenshot/demo assets to ensure they contain only sample data.
-- [ ] Confirm the minimum supported Obsidian version on a compatible installation.
-- [ ] Review the current developer policies and submission requirements.
+- [x] Check light and dark themes, keyboard focus, and reduced-motion behavior.
+- [x] Check startup, disable/re-enable, rename, and multiple panes without draft loss.
+- [x] Review screenshot/demo assets to ensure they contain only sample data.
+- [x] Confirm the minimum supported Obsidian version on a compatible installation.
+- [x] Review the current developer policies and submission requirements.
 
 Desktop testing and narrow-pane checks do not establish mobile compatibility.
 Do not publish until device validation is complete.
@@ -42,6 +42,19 @@ cursor positioning, and a 320px-wide list/menu without horizontal overflow.
 
 Real-keyboard dispatch, actual iOS/Android devices, the minimum Obsidian version,
 and the remaining launch gates above are not established by this record.
+
+### Maintainer release sign-off
+
+On 25 October 2026, the maintainer confirmed the remaining manual launch gates
+and authorized publication of version 1.0.0. This is maintainer-reported sign-off;
+individual device models, operating-system versions, and compatibility-test
+results were not recorded in the independent desktop validation above.
+
+The current [developer policies](https://docs.obsidian.md/community-directory/developer-policies)
+and [submission requirements](https://docs.obsidian.md/community-directory/submission-requirements-for-plugins)
+were reviewed before tagging. The plugin uses no networking, telemetry,
+Node.js/Electron runtime APIs, external-vault file access, or account/payment
+requirements. It includes its MIT license and the bundled YAML license notice.
 
 ## First publication
 
