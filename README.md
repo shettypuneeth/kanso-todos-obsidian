@@ -2,13 +2,8 @@
 
 **A compact, visual task list inside any note, backed by plain-text YAML.**
 
-Keep tasks beside the notes they belong to. Add and edit them through a
+**Kanso (簡素)** means simplicity or plainness in Japanese. Keep tasks beside the notes they belong to. Add and edit them through a
 theme-native widget, with status, priority, due dates, and links to source notes.
-Your notes remain the database: no account, network requests, or external service.
-
-**Kanso (簡素)** means simplicity or plainness in Japanese. The name reflects the
-idea behind this plugin: keep the essentials close at hand, without unnecessary
-clutter or complexity.
 
 ![Kanso Todos task list in Obsidian](assets/kanso-todos.png)
 
@@ -19,8 +14,6 @@ clutter or complexity.
 - Set due dates with local-calendar labels and overdue highlighting.
 - Link tasks to source notes and open them directly.
 - Collapse a list or expand its completed tasks independently in each pane.
-- Work in Live Preview and Reading View, with touch and narrow-pane layouts.
-- Display and navigate existing task rollover links.
 
 If you've found Kanso Todos useful, please consider
 [buying me a coffee](https://buymeacoffee.com/pshetty).
@@ -55,6 +48,7 @@ You can also put this empty block in a note or daily-note template:
 
 ````markdown
 ```kanso-todos
+
 ```
 ````
 
@@ -97,33 +91,11 @@ They are **not Markdown checkboxes** and are not indexed by the Tasks plugin,
 Dataview task queries, or Obsidian's checkbox search as ordinary Markdown tasks.
 Kanso Todos does not aggregate tasks across your vault or synchronize checkboxes.
 
-The plugin edits only its fence body, preserving unrelated note text and unknown
-YAML fields. Open editor content takes precedence over saved vault content.
-If open editors disagree, writes are refused until you reconcile them.
-
-Task titles are plain text, not rendered Markdown. You can change a list's
-heading by editing its `title` field in Source mode. Source-note links are
-references only: opening one never creates or edits the linked note.
-
-The data schema is version **2**, independent of the plugin's release version.
-Existing version-2 Kanso UI todo blocks work without conversion. Legacy
-version-1 data is not migrated automatically. **Do not enable Kanso UI and
-Kanso Todos together:** both register the same code-block language.
-
-Disabling the plugin leaves readable YAML in your notes. Back up notes before
-manual YAML edits; copied block and task IDs must remain unique where required.
-See the [data and behavior reference](docs/todos.md) for the complete contract.
-
 ### Rollover links
 
 Kanso Todos can display and follow existing `rollover.previous` and
 `rollover.next` references. Entries with a next link become read-only historical
-rows; incoming-only entries remain editable.
-
-There is **no move command, automatic daily rollover, or link-repair service**.
-Rollover data is externally authored. Renaming or deleting a referenced note or
-task can break its links; the plugin reports missing targets rather than
-guessing or rewriting history. Advanced authoring details are in the
+rows; incoming-only entries remain editable. Advanced authoring details are in the
 [data reference](docs/todos.md#agent-authored-rollover-contract).
 
 ## Development
@@ -138,11 +110,6 @@ npm run check-release
 `npm run dev` watches source changes. Production builds exclude sourcemaps.
 Copy the generated `main.js`, `manifest.json`, and `styles.css` into a test vault's
 `.obsidian/plugins/kanso-todos/` folder. Do not edit the generated bundle.
-
-This is an independent extraction of the todo widget from
-[Kanso UI](https://github.com/shettypuneeth/kanso-ui-obsidian), originating at
-commit `bb4eb76`. There is no shared runtime package or automatic synchronization;
-relevant fixes are ported deliberately.
 
 ## Feedback
 
