@@ -1,7 +1,7 @@
 {
   "id": "kanso-todos",
   "name": "Kanso Todos",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "minAppVersion": "1.8.7",
   "description": "Compact, visual task lists inside your notes, backed by plain-text YAML.",
   "author": "Puneeth Shetty",
