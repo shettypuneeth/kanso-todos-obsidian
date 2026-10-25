@@ -1,6 +1,6 @@
 {
   "name": "kanso-todos-obsidian",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Compact, visual task lists inside your notes, backed by plain-text YAML.",
   "main": "main.js",

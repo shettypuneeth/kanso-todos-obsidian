@@ -3,13 +3,7 @@ import { setIcon } from "obsidian";
 export function element<K extends keyof HTMLElementTagNameMap>(
   parent: HTMLElement, tag: K, className: string, text?: string,
 ): HTMLElementTagNameMap[K] {
-  const node = parent.ownerDocument.createElement(tag);
-  node.className = className;
-
-  if (text !== undefined) node.textContent = text;
-
-  parent.append(node);
-  return node;
+  return parent.createEl(tag, { cls: className, text });
 }
 
 /**
@@ -21,7 +15,7 @@ export function accessibleLabel(node: HTMLElement, label: string): void {
   let text = id ? node.ownerDocument.getElementById(id) : null;
 
   if (!text) {
-    text = node.ownerDocument.createElement("span");
+    text = createSpan();
     text.id = `kanso-label-${crypto.randomUUID()}`;
     text.hidden = true;
     node.after(text);

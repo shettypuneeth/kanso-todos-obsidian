@@ -314,7 +314,7 @@
     background: color-mix(in srgb, var(--kanso-todo-incoming) 12%, transparent);
 }
 
-.kanso-todos .kanso-todo-rollover-link.is-incoming:has(~ .is-outgoing) {
+.kanso-todos .kanso-todo-rollover-link.is-incoming:not(:last-of-type) {
     border-start-end-radius: 0;
     border-end-end-radius: 0;
 }
@@ -803,11 +803,12 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .kanso-todos *,
-    .kanso-todos *::before,
-    .kanso-todos *::after {
-        transition: none !important;
-        animation: none !important;
+    .kanso-widget.kanso-todos *,
+    .kanso-widget.kanso-todos *::before,
+    .kanso-widget.kanso-todos *::after,
+    .kanso-widget.kanso-todos .kanso-todo-row {
+        transition: none;
+        animation: none;
         scroll-behavior: auto;
     }
 }

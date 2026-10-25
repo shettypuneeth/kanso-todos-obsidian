@@ -1,3 +1,30 @@
+export function installDomExtensions(doc: Document): void {
+  const { Node } = doc.defaultView as Window & typeof globalThis;
+  Node.prototype.createEl = function (tag, options = {}) {
+    const node = (this.ownerDocument ?? doc).createElement(tag);
+    const info = typeof options === "string" ? { cls: options } : options;
+    if (info.cls) node.className = Array.isArray(info.cls) ? info.cls.join(" ") : info.cls;
+    if (info.text !== undefined) {
+      if (typeof info.text === "string") node.textContent = info.text;
+      else node.append(info.text);
+    }
+    this.appendChild(node);
+    return node;
+  };
+  Object.defineProperty(Node.prototype, "instanceOf", {
+    configurable: true,
+    value(this: unknown, type: typeof Node) {
+      if (this instanceof type) return true;
+      const win = (this as Node).ownerDocument?.defaultView;
+      const constructor = win && Reflect.get(win, type.name);
+      return typeof constructor === "function" && this instanceof constructor;
+    },
+  });
+}
+
+installDomExtensions(document);
+globalThis.createSpan = options => document.createDocumentFragment().createEl("span", options);
+
 export class MarkdownRenderChild {
   constructor(public containerEl: HTMLElement) {}
   registerDomEvent(element: HTMLElement, event: string, callback: EventListener) {

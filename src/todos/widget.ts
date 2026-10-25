@@ -116,15 +116,15 @@ export class TodosWidget extends MarkdownRenderChild {
     this.host.mounted(this);
 
     this.registerDomEvent(this.root, "focusin", event => {
-      const node = event.target;
-      if (node instanceof HTMLElement && node.dataset.focus) {
+      const node = event.target as HTMLElement | null;
+      if (node?.instanceOf(HTMLElement) && node.dataset.focus) {
         this.host.state.focus = { key: node.dataset.focus, start: null, end: null };
       }
     });
 
     this.registerDomEvent(this.root, "focusout", event => {
-      const next = event.relatedTarget;
-      if (next instanceof HTMLElement && !this.root.contains(next)) this.host.state.focus = undefined;
+      const next = event.relatedTarget as HTMLElement | null;
+      if (next?.instanceOf(HTMLElement) && !this.root.contains(next)) this.host.state.focus = undefined;
     });
 
     this.render();
@@ -173,9 +173,9 @@ export class TodosWidget extends MarkdownRenderChild {
 
   private rememberFocus(): boolean {
     const active = this.root.ownerDocument.activeElement;
-    if (!(active instanceof HTMLElement) || !this.root.contains(active) || !active.dataset.focus) return false;
+    if (!active?.instanceOf(HTMLElement) || !this.root.contains(active) || !active.dataset.focus) return false;
 
-    const input = active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement;
+    const input = active.instanceOf(HTMLInputElement) || active.instanceOf(HTMLTextAreaElement);
     this.host.state.focus = {
       key: active.dataset.focus,
       start: input ? active.selectionStart : null,
@@ -189,7 +189,7 @@ export class TodosWidget extends MarkdownRenderChild {
       .find(node => node.dataset.focus === key);
     target?.focus({ preventScroll: true });
 
-    if ((target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) && start !== null) {
+    if ((target?.instanceOf(HTMLInputElement) || target?.instanceOf(HTMLTextAreaElement)) && start !== null) {
       target.setSelectionRange(start, end ?? start);
     }
   }
@@ -251,7 +251,7 @@ export class TodosWidget extends MarkdownRenderChild {
     collapse.addEventListener("click", toggleCollapsed);
 
     header.addEventListener("click", event => {
-      if (!state.collapsed || (event.target instanceof Node && collapse.contains(event.target))) return;
+      if (!state.collapsed || collapse.contains(event.target as Node | null)) return;
       toggleCollapsed();
     });
 
@@ -518,8 +518,8 @@ export class TodosWidget extends MarkdownRenderChild {
       });
     }
 
-    const anchor = event.currentTarget;
-    if (anchor instanceof HTMLElement) {
+    const anchor = event.currentTarget as HTMLElement | null;
+    if (anchor?.instanceOf(HTMLElement)) {
       const rect = anchor.getBoundingClientRect();
       menu.showAtPosition({ x: rect.left, y: rect.bottom + 4 }, this.root.ownerDocument);
     } else {
@@ -716,8 +716,8 @@ export class TodosWidget extends MarkdownRenderChild {
         }));
     });
 
-    const anchor = event.currentTarget;
-    if (anchor instanceof HTMLElement) {
+    const anchor = event.currentTarget as HTMLElement | null;
+    if (anchor?.instanceOf(HTMLElement)) {
       const rect = anchor.getBoundingClientRect();
       menu.showAtPosition({ x: rect.right, y: rect.bottom + 4, left: true }, this.root.ownerDocument);
     } else {

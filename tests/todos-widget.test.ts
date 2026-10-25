@@ -6,7 +6,7 @@ import {
   TodosWidget,
   type TodoWidgetHost,
 } from "../src/todos/widget";
-import { Menu } from "./obsidian";
+import { installDomExtensions, Menu } from "./obsidian";
 
 const active: Todo = {
   id: "td_active",
@@ -38,13 +38,17 @@ function accessibleName(node: Element): string | null {
   return id ? node.ownerDocument.getElementById(id)?.textContent ?? null : node.textContent;
 }
 
-function setup(todos: Todo[] = [], options: { deferReady?: boolean; initialReadError?: Error } = {}) {
+function setup(
+  todos: Todo[] = [],
+  options: { deferReady?: boolean; initialReadError?: Error; document?: Document } = {},
+) {
   let source = JSON.stringify({ version: 2, id: "kt_test", title: "Tasks", todos });
   let initialReadError = options.initialReadError;
   let ready: (() => void) | undefined;
   const state = createTodoWidgetState();
-  const root = document.createElement("div");
-  document.body.append(root);
+  const doc = options.document ?? document;
+  const root = doc.createElement("div");
+  doc.body.append(root);
 
   const host: TodoWidgetHost = {
     state,
@@ -127,6 +131,57 @@ function setup(todos: Todo[] = [], options: { deferReady?: boolean; initialReadE
 afterEach(() => document.body.replaceChildren());
 
 describe("todos widget", () => {
+  function popoutDocument(): Document {
+    const frame = document.createElement("iframe");
+    document.body.append(frame);
+    const doc = frame.contentDocument!;
+    installDomExtensions(doc);
+    return doc;
+  }
+
+  it("preserves a draft's focus and selection across refreshes in another window", async () => {
+    const doc = popoutDocument();
+    const view = setup([active], { document: doc });
+    await settle();
+    view.click("Add a task");
+    view.type("Pop-out draft");
+    const title = view.root.querySelector<HTMLInputElement>(".kanso-todo-form-title")!;
+    expect(title instanceof HTMLInputElement).toBe(false);
+    expect(title.ownerDocument).toBe(doc);
+    expect(accessibleName(title)).toBe("Task title");
+    title.focus();
+    title.setSelectionRange(2, 7);
+
+    await view.widget.refresh();
+
+    const restored = view.root.querySelector<HTMLInputElement>(".kanso-todo-form-title")!;
+    expect(doc.activeElement).toBe(restored);
+    expect(restored.value).toBe("Pop-out draft");
+    expect([restored.selectionStart, restored.selectionEnd]).toEqual([2, 7]);
+    expect(view.host.save).not.toHaveBeenCalled();
+    view.widget.onunload();
+  });
+
+  it("anchors menus and toggles collapse once from a different window", async () => {
+    const doc = popoutDocument();
+    const view = setup([active], { document: doc });
+    await settle();
+    const trigger = view.root.querySelector<HTMLButtonElement>('[data-focus="menu-td_active"]')!;
+    trigger.getBoundingClientRect = vi.fn(() => new DOMRect(100, 50, 28, 28));
+    const show = vi.spyOn(Menu.prototype, "showAtPosition");
+    try {
+      view.click("Task actions");
+      expect(show).toHaveBeenCalledWith({ x: 128, y: 82, left: true }, doc);
+      view.click("Collapse Tasks");
+      expect(view.state.collapsed).toBe(true);
+      view.click("Expand Tasks");
+      expect(view.state.collapsed).toBe(false);
+    } finally {
+      show.mockRestore();
+      view.widget.onunload();
+    }
+  });
+
   it.each([
     [{ next }, ["Moved → 28 Oct"]],
     [{ previous, next }, ["From 31 Dec", "Moved → 28 Oct"]],
