@@ -1,0 +1,30 @@
+{
+  "name": "kanso-todos-obsidian",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Compact, visual task lists inside your notes, backed by plain-text YAML.",
+  "main": "main.js",
+  "author": "Puneeth Shetty",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shettypuneeth/kanso-todos-obsidian.git"
+  },
+  "scripts": {
+    "dev": "node esbuild.config.mjs --watch",
+    "build": "tsc --noEmit && node esbuild.config.mjs",
+    "test": "vitest run",
+    "check-release": "node scripts/check-release.mjs"
+  },
+  "dependencies": {
+    "yaml": "^2.8.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "esbuild": "^0.25.0",
+    "jsdom": "^26.0.0",
+    "obsidian": "^1.8.7",
+    "typescript": "^5.8.0",
+    "vitest": "^3.2.0"
+  }
+}

@@ -1,0 +1,813 @@
+.kanso-todos {
+    --kanso-todo-incoming: color-mix(in srgb, var(--color-purple) 70%, var(--text-normal));
+    --kanso-todo-surface: var(--background-secondary);
+    --kanso-todo-chip: color-mix(
+        in srgb,
+        var(--background-modifier-hover) 68%,
+        transparent
+    );
+    font-family: var(--font-interface);
+    font-size: var(--font-ui-medium);
+    color: var(--text-normal);
+    container-type: inline-size;
+    width: 100%;
+    min-width: 0;
+    padding: 4px 0 12px;
+}
+
+.kanso-todos *,
+.kanso-todos *::before,
+.kanso-todos *::after {
+    box-sizing: border-box;
+}
+
+.markdown-source-view.mod-cm6 .cm-preview-code-block .kanso-todos {
+    width: auto;
+    margin-inline: 4px;
+}
+
+.markdown-source-view.mod-cm6
+    .cm-preview-code-block
+    .kanso-todos
+    .kanso-todo-header {
+    padding-inline-end: 40px;
+}
+
+.kanso-todos button {
+    font: inherit;
+}
+
+.kanso-todos .kanso-todo-header,
+.kanso-todos .kanso-todo-heading,
+.kanso-todos .kanso-todo-main,
+.kanso-todos .kanso-todo-meta,
+.kanso-todos .kanso-todo-actions,
+.kanso-todos .kanso-completed-toggle {
+    display: flex;
+    align-items: center;
+}
+
+.kanso-todos .kanso-todo-header {
+    min-height: 40px;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 2px 6px;
+}
+
+.kanso-todos.is-collapsed .kanso-todo-header {
+    min-height: 42px;
+    padding: 6px 8px;
+    border-radius: var(--radius-m);
+    background: color-mix(
+        in srgb,
+        var(--kanso-todo-surface) 72%,
+        transparent
+    );
+    cursor: pointer;
+}
+
+.kanso-todos .kanso-todo-heading {
+    min-width: 0;
+    gap: 5px;
+}
+
+.kanso-todos .kanso-todo-heading-copy {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: baseline;
+    gap: 6px;
+    min-width: 0;
+}
+
+.kanso-todos .kanso-todo-heading-label {
+    overflow: hidden;
+    font-weight: 650;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.kanso-todos .kanso-todo-count {
+    color: var(--text-muted);
+    font-size: var(--font-ui-small);
+}
+
+.kanso-todos .kanso-todo-collapse,
+.kanso-todos .kanso-icon-button {
+    display: inline-grid;
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-s);
+    place-items: center;
+    background: transparent;
+    box-shadow: none;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.kanso-todos .kanso-todo-collapse {
+    width: 28px;
+    min-width: 28px;
+}
+
+.kanso-todos :is(.kanso-todo-collapse, .kanso-icon-button):not(:disabled):hover {
+    background: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+.kanso-todos :is(.kanso-todo-collapse, .kanso-icon-button) svg {
+    width: 16px;
+    height: 16px;
+}
+
+.kanso-todos .kanso-todo-list {
+    display: grid;
+    gap: 2px;
+}
+
+.kanso-todos .kanso-todo-row {
+    min-width: 0;
+    border-radius: var(--radius-s);
+    padding: 4px 6px 4px 12px;
+    transition:
+        opacity 160ms ease,
+        transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.kanso-todos .kanso-todo-main {
+    align-items: flex-start;
+    min-width: 0;
+    gap: 9px;
+}
+
+.kanso-todos .kanso-todo-checkbox {
+    width: 15px;
+    height: 15px;
+    min-width: 15px;
+    margin: 3px 0 0;
+    accent-color: var(--interactive-accent);
+    cursor: pointer;
+}
+
+.kanso-todos .kanso-todo-status,
+.kanso-todos .kanso-todo-priority {
+    display: inline-grid;
+    flex: 0 0 auto;
+    height: 19px;
+    min-height: 19px;
+    margin-top: 1px;
+    padding: 1px 6px;
+    border: 0;
+    border-radius: 5px;
+    place-items: center;
+    box-shadow: none;
+    font-size: 9px;
+    font-weight: 750;
+    letter-spacing: 0.045em;
+    line-height: 1;
+    transition:
+        background-color 120ms ease,
+        box-shadow 90ms ease,
+        color 120ms ease,
+        transform 90ms ease;
+}
+
+.kanso-todos .kanso-todo-status {
+}
+
+.kanso-todos button.kanso-todo-priority {
+    cursor: pointer;
+}
+
+.kanso-todos .kanso-todo-status.is-todo {
+    --kanso-todo-status-color: var(--color-blue, #4c8dff);
+    background: color-mix(in srgb, var(--color-blue, #4c8dff) 9%, transparent);
+    color: color-mix(in srgb, var(--color-blue, #4c8dff) 52%, var(--text-muted));
+}
+
+.kanso-todos .kanso-todo-status.is-doing {
+    --kanso-todo-status-color: var(--color-yellow, #d9ad42);
+    background: color-mix(in srgb, var(--color-yellow, #d9ad42) 10%, transparent);
+    color: color-mix(in srgb, var(--color-yellow, #d9ad42) 48%, var(--text-muted));
+}
+
+.kanso-todos .kanso-todo-status:not(:disabled):hover {
+    background: color-mix(
+        in srgb,
+        var(--kanso-todo-status-color) 17%,
+        transparent
+    );
+    color: color-mix(
+        in srgb,
+        var(--kanso-todo-status-color) 62%,
+        var(--text-muted)
+    );
+}
+
+.kanso-todos .kanso-todo-status:not(:disabled):active {
+    background: color-mix(
+        in srgb,
+        var(--kanso-todo-status-color) 22%,
+        transparent
+    );
+    box-shadow: inset 0 1px 2px rgb(0 0 0 / 18%);
+    transform: translateY(1px) scale(0.97);
+}
+
+.kanso-todos .kanso-todo-priority {
+    margin-inline: -3px;
+    background: color-mix(in srgb, var(--text-muted) 11%, transparent);
+    color: color-mix(in srgb, var(--text-normal) 52%, var(--text-muted));
+    cursor: pointer;
+}
+
+.kanso-todos button.kanso-todo-priority:not(:disabled):hover {
+    background: color-mix(in srgb, var(--text-muted) 18%, transparent);
+    color: color-mix(in srgb, var(--text-normal) 68%, var(--text-muted));
+}
+
+.kanso-todos button.kanso-todo-priority:not(:disabled):active {
+    background: color-mix(in srgb, var(--text-muted) 24%, transparent);
+    box-shadow: inset 0 1px 2px rgb(0 0 0 / 18%);
+    transform: translateY(1px) scale(0.97);
+}
+
+.kanso-todos .kanso-todo-content {
+    display: flex;
+    flex: 1 1 auto;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 3px 7px;
+    min-width: 0;
+}
+
+.kanso-todos .kanso-todo-title {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    line-height: 1.35;
+}
+
+.kanso-todos .kanso-todo-row.is-completed {
+    opacity: 0.68;
+}
+
+.kanso-todos .kanso-todo-row.is-completed .kanso-todo-title {
+    color: var(--text-muted);
+    text-decoration: line-through;
+}
+
+.kanso-todos .kanso-todo-row.is-moved .kanso-todo-title {
+    color: var(--text-muted);
+}
+
+.kanso-todos .kanso-todo-moved-marker {
+    flex: 0 0 16px;
+    width: 16px;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.kanso-todos .kanso-todo-row:focus-visible,
+.kanso-todos .kanso-todo-rollover-link:focus-visible {
+    outline: 2px solid var(--interactive-accent);
+    outline-offset: 2px;
+}
+
+.kanso-todos .kanso-todo-rollover {
+    display: inline-flex;
+    flex: 0 1 auto;
+    max-width: 100%;
+    border-radius: var(--radius-s);
+    background: var(--kanso-todo-chip);
+}
+
+.kanso-todos .kanso-todo-rollover-link {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    min-height: 20px;
+    padding: 2px 6px;
+    border-radius: inherit;
+    color: var(--text-muted);
+    font-size: var(--font-ui-smaller);
+    line-height: 1.3;
+    text-decoration: none;
+    overflow-wrap: anywhere;
+}
+
+.kanso-todos .kanso-todo-rollover-icon {
+    display: inline-flex;
+    flex: 0 0 12px;
+}
+
+.kanso-todos .kanso-todo-rollover-icon svg {
+    width: 12px;
+    height: 12px;
+}
+
+.kanso-todos .kanso-todo-rollover-link.is-incoming {
+    color: var(--kanso-todo-incoming);
+    background: color-mix(in srgb, var(--kanso-todo-incoming) 12%, transparent);
+}
+
+.kanso-todos .kanso-todo-rollover-link.is-incoming:has(~ .is-outgoing) {
+    border-start-end-radius: 0;
+    border-end-end-radius: 0;
+}
+
+.kanso-todos .kanso-todo-rollover-link.is-incoming ~ .is-outgoing {
+    border-inline-start: 1px solid var(--background-modifier-border);
+    border-start-start-radius: 0;
+    border-end-start-radius: 0;
+}
+
+.kanso-todos .kanso-todo-rollover-link:hover {
+    text-decoration: underline;
+}
+
+@media (pointer: coarse) {
+    .kanso-todos .kanso-todo-rollover-link {
+        min-height: 32px;
+    }
+}
+
+.kanso-todos .kanso-todo-meta {
+    flex: 0 1 auto;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 0;
+}
+
+.kanso-todos .kanso-todo-chip {
+    display: inline-flex;
+    height: 20px;
+    min-height: 20px;
+    align-items: center;
+    gap: 4px;
+    padding: 1px 6px;
+    border: 0;
+    border-radius: var(--radius-s);
+    background: var(--kanso-todo-chip);
+    box-shadow: none;
+    color: var(--text-muted);
+    font-size: var(--font-ui-smaller);
+    line-height: 1.2;
+    transition:
+        background-color 120ms ease,
+        color 120ms ease;
+}
+
+.kanso-todos button.kanso-todo-chip {
+    cursor: pointer;
+}
+
+.kanso-todos .kanso-todo-chip:hover {
+    background: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+.kanso-todos .kanso-todo-chip-icon {
+    display: inline-grid;
+    place-items: center;
+}
+
+.kanso-todos .kanso-todo-chip-icon svg {
+    width: 12px;
+    height: 12px;
+}
+
+.kanso-todos .kanso-due-chip.is-overdue {
+    background: color-mix(in srgb, var(--text-error) 12%, transparent);
+    color: var(--text-error);
+}
+
+.kanso-todos .kanso-todo-actions {
+    flex: 0 0 auto;
+    margin-top: -4px;
+    opacity: 0;
+    transition: opacity 120ms ease;
+}
+
+.kanso-todos .kanso-todo-row:hover .kanso-todo-actions,
+.kanso-todos .kanso-todo-row:focus-within .kanso-todo-actions,
+.is-mobile .kanso-todos .kanso-todo-actions {
+    opacity: 1;
+}
+
+.kanso-todos .kanso-todo-form {
+    --kanso-todo-faint: color-mix(in srgb, var(--text-muted) 62%, transparent);
+    margin: 4px 6px 10px;
+    padding: 10px 12px 8px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-m);
+    background: var(--background-primary-alt);
+    transition:
+        border-color 120ms ease,
+        box-shadow 120ms ease;
+}
+
+.kanso-todos .kanso-todo-form:focus-within {
+    border-color: var(--interactive-accent);
+    box-shadow: 0 0 0 3px
+        color-mix(in srgb, var(--interactive-accent) 16%, transparent);
+}
+
+.kanso-todos .kanso-todo-row.is-editing {
+    padding: 2px 0;
+}
+
+.kanso-todos .kanso-todo-row.is-editing .kanso-todo-form {
+    margin: 2px 0 6px;
+}
+
+.kanso-todos input.kanso-todo-form-title {
+    width: 100%;
+    height: auto;
+    min-height: 26px;
+    padding: 2px 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--text-normal);
+    font-size: calc(var(--font-ui-medium) + 1px);
+    font-weight: 400;
+    line-height: 1.4;
+}
+
+.kanso-todos input.kanso-todo-form-title::placeholder {
+    color: var(--kanso-todo-faint);
+    opacity: 1;
+}
+
+.kanso-todos input.kanso-todo-form-title:is(:hover, :focus, :focus-visible) {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    outline: none;
+}
+
+.kanso-todos .kanso-todo-form .kanso-message {
+    margin: 4px 0 0;
+    color: var(--text-error);
+}
+
+.kanso-todos .kanso-todo-props {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.kanso-todos .kanso-todo-prop {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    width: auto;
+    max-width: 100%;
+    height: 24px;
+    min-height: 24px;
+    padding: 0 8px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-s);
+    background: transparent;
+    box-shadow: none;
+    color: var(--text-muted);
+    font-size: var(--font-ui-smaller);
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+        background-color 120ms ease,
+        border-color 120ms ease,
+        color 120ms ease;
+}
+
+.kanso-todos .kanso-todo-prop:not(:disabled):hover {
+    border-color: var(--background-modifier-border-hover);
+    background: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+.kanso-todos .kanso-todo-prop.has-value {
+    border-color: transparent;
+    background: color-mix(in srgb, var(--text-muted) 12%, transparent);
+    color: var(--text-normal);
+}
+
+.kanso-todos .kanso-todo-prop.has-value:not(:disabled):hover {
+    border-color: transparent;
+    background: color-mix(in srgb, var(--text-muted) 18%, transparent);
+}
+
+.kanso-todos .kanso-todo-prop.is-overdue {
+    color: var(--text-error);
+}
+
+.kanso-todos .kanso-todo-prop-icon {
+    display: inline-grid;
+    flex: 0 0 auto;
+    place-items: center;
+    color: var(--kanso-todo-faint);
+}
+
+.kanso-todos .kanso-todo-prop.has-value .kanso-todo-prop-icon,
+.kanso-todos .kanso-todo-prop:not(:disabled):hover .kanso-todo-prop-icon {
+    color: currentColor;
+}
+
+.kanso-todos .kanso-todo-prop-icon svg {
+    width: 13px;
+    height: 13px;
+}
+
+.kanso-todos .kanso-todo-prop-label {
+    overflow: hidden;
+    max-width: 180px;
+    text-overflow: ellipsis;
+}
+
+.kanso-todos input.kanso-todo-date-input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.kanso-todos .kanso-todo-form-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--background-modifier-border);
+}
+
+.kanso-todos .kanso-todo-form-hint {
+    overflow: hidden;
+    min-width: 0;
+    color: var(--kanso-todo-faint);
+    font-size: var(--font-ui-smaller);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.kanso-todos .kanso-todo-form-hint kbd {
+    display: inline-block;
+    min-width: 16px;
+    margin: 0;
+    padding: 1px 4px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    background: var(--background-primary);
+    box-shadow: none;
+    color: var(--text-muted);
+    font-family: var(--font-interface);
+    font-size: 10px;
+    line-height: 1.3;
+    text-align: center;
+}
+
+.kanso-todos .kanso-todo-form-actions {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+}
+
+.kanso-todos :is(.kanso-todo-primary, .kanso-todo-secondary) {
+    width: auto;
+    height: 26px;
+    min-height: 26px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: var(--radius-s);
+    box-shadow: none;
+    font-size: var(--font-ui-small);
+    font-weight: 500;
+    cursor: pointer;
+    transition:
+        background-color 120ms ease,
+        color 120ms ease,
+        opacity 120ms ease;
+}
+
+.kanso-todos .kanso-todo-secondary {
+    background: transparent;
+    color: var(--text-muted);
+}
+
+.kanso-todos .kanso-todo-secondary:not(:disabled):hover {
+    background: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+.kanso-todos .kanso-todo-primary {
+    min-width: 52px;
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+}
+
+.kanso-todos .kanso-todo-primary:not(:disabled):hover {
+    background: var(--interactive-accent-hover);
+}
+
+.kanso-todos .kanso-todo-primary:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.kanso-todos .kanso-completed-toggle {
+    width: auto;
+    min-height: 30px;
+    gap: 7px;
+    margin: 5px 6px 0;
+    padding: 3px 6px;
+    border: 0;
+    border-radius: var(--radius-s);
+    background: transparent;
+    box-shadow: none;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.kanso-todos .kanso-completed-toggle:hover {
+    background: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+.kanso-todos .kanso-completed-count {
+    display: inline-grid;
+    width: auto;
+    min-width: 15px;
+    height: 15px;
+    padding: 0 4px;
+    border-radius: 4px;
+    place-items: center;
+    background: var(--background-modifier-hover);
+    font-size: 10px;
+    line-height: 1;
+    text-align: center;
+    transition:
+        background-color 120ms ease,
+        color 120ms ease;
+}
+
+.kanso-todos .kanso-completed-toggle:hover .kanso-completed-count {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+}
+
+.kanso-todos .kanso-completed-label {
+    font-weight: 600;
+}
+
+.kanso-todos .kanso-completed-chevron {
+    display: inline-grid;
+    place-items: center;
+}
+
+.kanso-todos .kanso-completed-chevron svg {
+    width: 13px;
+    height: 13px;
+}
+
+.kanso-todos .kanso-completed-list {
+    margin-top: 2px;
+}
+
+.kanso-todos .kanso-todo-all-done,
+.kanso-todos .kanso-empty,
+.kanso-todos .kanso-message {
+    margin: 4px 6px;
+    color: var(--text-muted);
+    font-size: var(--font-ui-small);
+}
+
+.kanso-todos .kanso-empty {
+    padding: 8px;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--text-accent);
+    cursor: pointer;
+}
+
+.kanso-todos .kanso-block-error {
+    padding: 12px;
+    border: 1px solid var(--text-error);
+    border-radius: var(--radius-m);
+    color: var(--text-error);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.kanso-todos :is(button, input, select):focus-visible {
+    outline: 2px solid var(--interactive-accent);
+    outline-offset: 2px;
+}
+
+.kanso-todos .kanso-todo-list-reveal .kanso-todo-row {
+    animation: kanso-todo-reveal 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: calc(var(--kanso-todo-index, 0) * 28ms);
+}
+
+@keyframes kanso-todo-reveal {
+    from {
+        opacity: 0;
+        transform: translateY(-7px);
+    }
+}
+
+@container (max-width: 420px) {
+    .kanso-todos .kanso-todo-header,
+    .kanso-todos.is-collapsed .kanso-todo-header {
+        padding-inline: 4px;
+    }
+
+    .kanso-todos .kanso-todo-row {
+        padding-inline: 10px 4px;
+    }
+
+    .kanso-todos .kanso-todo-form {
+        margin-inline: 4px;
+    }
+
+    .kanso-todos .kanso-completed-toggle,
+    .kanso-todos .kanso-todo-all-done,
+    .kanso-todos .kanso-empty,
+    .kanso-todos .kanso-message {
+        margin-inline: 4px;
+    }
+
+    .kanso-todos .kanso-todo-actions {
+        opacity: 1;
+    }
+}
+
+@container (max-width: 360px) {
+    .kanso-todos .kanso-todo-form-hint {
+        display: none;
+    }
+}
+
+@media (pointer: coarse) {
+    .kanso-todos .kanso-todo-form-hint {
+        display: none;
+    }
+
+    .kanso-todos .kanso-todo-prop {
+        height: 32px;
+        min-height: 32px;
+        padding-inline: 10px;
+    }
+
+    .kanso-todos :is(.kanso-todo-primary, .kanso-todo-secondary) {
+        height: 36px;
+        min-height: 36px;
+        padding-inline: 14px;
+    }
+
+    .kanso-todos .kanso-todo-collapse {
+        margin-inline-end: -18px;
+    }
+
+    .kanso-todos .kanso-todo-collapse svg {
+        transform: translateX(-8px);
+    }
+
+    .kanso-todos .kanso-todo-collapse:not(:disabled):is(:hover, :active) {
+        background: transparent;
+        box-shadow: none;
+    }
+
+    .kanso-todos .kanso-todo-collapse,
+    .kanso-todos .kanso-icon-button {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .kanso-todos *,
+    .kanso-todos *::before,
+    .kanso-todos *::after {
+        transition: none !important;
+        animation: none !important;
+        scroll-behavior: auto;
+    }
+}
