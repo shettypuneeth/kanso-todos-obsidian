@@ -25,6 +25,14 @@ const nextPriority: Record<TodoPriority, TodoPriority> = {
   P2: "P0",
 };
 
+const completionFadeDuration = 220;
+const completionDuration = completionFadeDuration + 260;
+
+interface TodoCompletion {
+  status: Todo["status"];
+  startedAt?: number;
+}
+
 export interface TodoDraft {
   key: string;
   value: TodoEditableFields;
@@ -41,6 +49,8 @@ export interface TodoWidgetState {
   draft?: TodoDraft;
   error?: string;
   busy: boolean;
+  completing: Map<string, TodoCompletion>;
+  completionListeners: Set<() => void>;
   focus?: { key: string; start: number | null; end: number | null };
 }
 
@@ -51,6 +61,8 @@ export function createTodoWidgetState(): TodoWidgetState {
     capture: false,
     captureValue: emptyTodo(),
     busy: false,
+    completing: new Map(),
+    completionListeners: new Set(),
   };
 }
 
@@ -95,6 +107,8 @@ export interface TodoWidgetHost {
 export class TodosWidget extends MarkdownRenderChild {
   private source: string;
   private data?: TodoCollection;
+  private parsedSource?: string;
+  private validRender = false;
   private alive = false;
   private revision = 0;
   private root: HTMLElement;
@@ -102,11 +116,15 @@ export class TodosWidget extends MarkdownRenderChild {
   private rendering = false;
   private releaseKeys?: () => void;
   private captureSubmitting = false;
+  private completionAnimations = new Map<Animation, number>();
+  private readonly completionSettled = () => { void this.refresh(); };
 
-  constructor(container: HTMLElement, source: string, private readonly host: TodoWidgetHost) {
+  constructor(container: HTMLElement, source: string, private readonly host: TodoWidgetHost, initialData?: TodoCollection) {
     super(container);
     this.source = source;
     this.root = container;
+    this.data = initialData;
+    if (initialData) this.parsedSource = source;
   }
 
   onload(): void {
@@ -114,6 +132,7 @@ export class TodosWidget extends MarkdownRenderChild {
     this.root.classList.add("kanso-widget", "kanso-todos");
     this.root.setAttribute("role", "group");
     this.host.mounted(this);
+    this.host.state.completionListeners.add(this.completionSettled);
 
     this.registerDomEvent(this.root, "focusin", event => {
       const node = event.target as HTMLElement | null;
@@ -139,6 +158,8 @@ export class TodosWidget extends MarkdownRenderChild {
     this.menu?.hide();
     this.releaseKeys?.();
     this.alive = false;
+    this.host.state.completionListeners.delete(this.completionSettled);
+    this.stopCompletionAnimations();
     this.host.unmounted(this);
   }
 
@@ -148,6 +169,7 @@ export class TodosWidget extends MarkdownRenderChild {
     try {
       const source = await this.host.read();
       if (!this.alive || revision !== this.revision) return;
+      if (preserveValidRender && this.validRender && source === this.source) return;
       this.source = source;
       this.render();
     } catch (error) {
@@ -185,8 +207,22 @@ export class TodosWidget extends MarkdownRenderChild {
   }
 
   private focus(key: string, start: number | null = null, end: number | null = null): void {
-    const target = [...this.root.querySelectorAll<HTMLElement>("[data-focus]")]
+    let target = [...this.root.querySelectorAll<HTMLElement>("[data-focus]")]
       .find(node => node.dataset.focus === key);
+    const exiting = target?.closest(".is-completing");
+    if (exiting) {
+      const rows = [...this.root.querySelectorAll<HTMLElement>(".kanso-todo-row")];
+      const index = rows.indexOf(exiting as HTMLElement);
+      const next = [...rows.slice(index + 1), ...rows.slice(0, index).reverse()]
+        .find(row => !row.classList.contains("is-completing"));
+      target = next?.querySelector<HTMLElement>(".kanso-todo-checkbox")
+        ?? this.root.querySelector<HTMLElement>('[data-focus="completed-toggle"], [data-focus="add"]')
+        ?? undefined;
+      if (target?.instanceOf(HTMLInputElement) && target.disabled) target = next;
+      if (target?.instanceOf(HTMLButtonElement) && target.disabled) {
+        target = this.root.querySelector<HTMLElement>('[data-focus="collapse"]') ?? undefined;
+      }
+    }
     target?.focus({ preventScroll: true });
 
     if ((target?.instanceOf(HTMLInputElement) || target?.instanceOf(HTMLTextAreaElement)) && start !== null) {
@@ -195,6 +231,8 @@ export class TodosWidget extends MarkdownRenderChild {
   }
 
   private renderError(message: string): void {
+    this.validRender = false;
+    this.stopCompletionAnimations();
     this.rendering = true;
     this.releaseKeys?.();
     this.root.replaceChildren();
@@ -213,17 +251,31 @@ export class TodosWidget extends MarkdownRenderChild {
     if (!this.alive) return;
 
     const hadFocus = this.rememberFocus();
+    this.stopCompletionAnimations();
 
     try {
-      this.data = readTodos(this.source).data;
+      if (!this.data || this.parsedSource !== this.source) {
+        this.data = readTodos(this.source).data;
+        this.parsedSource = this.source;
+      }
     } catch (error) {
       this.renderError(errorMessage(error));
       return;
     }
+    this.validRender = true;
 
     const state = this.host.state;
-    const active = this.data.todos.filter(todo => todo.status !== "completed");
-    const completed = this.data.todos.filter(todo => todo.status === "completed");
+    for (const [id, completion] of state.completing) {
+      const todo = this.data.todos.find(todo => todo.id === id);
+      if (!todo || todo.rollover?.next
+        || (completion.startedAt !== undefined && (todo.status !== "completed"
+          || Date.now() - completion.startedAt >= completionDuration))
+        || !this.canAnimateCompletion()) {
+        state.completing.delete(id);
+      }
+    }
+    const active = this.data.todos.filter(todo => todo.status !== "completed" || state.completing.has(todo.id!));
+    const completed = this.data.todos.filter(todo => todo.status === "completed" && !state.completing.has(todo.id!));
     const title = this.data.title?.trim() || "Tasks";
 
     this.rendering = true;
@@ -233,8 +285,9 @@ export class TodosWidget extends MarkdownRenderChild {
 
     const header = element(this.root, "div", "kanso-todo-header");
     const heading = element(header, "div", "kanso-todo-heading");
+    const actions = element(header, "div", "kanso-todo-header-actions");
     const collapse = button(
-      heading,
+      actions,
       state.collapsed ? `Expand ${title}` : `Collapse ${title}`,
       state.collapsed ? "chevron-right" : "chevron-down",
       "kanso-todo-collapse",
@@ -259,20 +312,21 @@ export class TodosWidget extends MarkdownRenderChild {
     const headingLabel = element(headingCopy, "span", "kanso-todo-heading-label", title);
     headingLabel.id = `kanso-todo-heading-${crypto.randomUUID()}`;
     this.root.setAttribute("aria-labelledby", headingLabel.id);
+    element(headingCopy, "span", "kanso-todo-count", String(this.data.todos.length));
 
     if (state.collapsed) {
-      element(headingCopy, "span", "kanso-todo-count", String(this.data.todos.length));
       if (hadFocus && state.focus) this.focus(state.focus.key, state.focus.start, state.focus.end);
       this.rendering = false;
       return;
     }
 
     const add = button(
-      header,
+      actions,
       state.capture ? "Close task creator" : "Add a task",
       state.capture ? "x" : "plus",
       "kanso-icon-button kanso-todo-add",
     );
+    actions.insertBefore(add, collapse);
     add.dataset.focus = "add";
     add.disabled = state.busy;
     add.addEventListener("click", () => {
@@ -333,6 +387,70 @@ export class TodosWidget extends MarkdownRenderChild {
 
     if (hadFocus && state.focus) this.focus(state.focus.key, state.focus.start, state.focus.end);
     this.rendering = false;
+    this.animateCompletions();
+  }
+
+  private canAnimateCompletion(): boolean {
+    return typeof this.root.animate === "function"
+      && !this.root.ownerDocument.defaultView?.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  }
+
+  private stopCompletionAnimations(): void {
+    for (const [animation, timer] of this.completionAnimations) {
+      window.clearTimeout(timer);
+      animation.onfinish = animation.oncancel = null;
+      animation.cancel();
+    }
+    this.completionAnimations.clear();
+  }
+
+  private animateCompletions(): void {
+    for (const row of this.root.querySelectorAll<HTMLElement>(".is-completing")) {
+      const id = row.dataset.todo!;
+      const completion = this.host.state.completing.get(id);
+      if (completion?.startedAt === undefined) continue;
+
+      const elapsed = Math.max(0, Date.now() - completion.startedAt);
+      const view = this.root.ownerDocument.defaultView!;
+      const css = view.getComputedStyle(row);
+      const gap = row.parentElement!.children.length > 1
+        ? parseFloat(view.getComputedStyle(row.parentElement!).rowGap) || 0 : 0;
+      const size = { height: `${row.getBoundingClientRect().height}px`, paddingTop: css.paddingTop, paddingBottom: css.paddingBottom, marginBottom: "0px" };
+      const animation = row.animate([
+        { ...size, opacity: css.opacity, transform: "translateY(0)", offset: 0, easing: "cubic-bezier(0.22, 1, 0.36, 1)" },
+        { ...size, opacity: 0, transform: "translateY(-6px)", offset: completionFadeDuration / completionDuration, easing: "cubic-bezier(0.22, 1, 0.36, 1)" },
+        { height: "0px", paddingTop: "0px", paddingBottom: "0px", marginBottom: `${-gap}px`, opacity: 0, transform: "translateY(-6px)", offset: 1 },
+      ], { duration: completionDuration, fill: "both", easing: "linear" });
+      animation.currentTime = elapsed;
+      const finish = () => {
+        if (!this.alive) return;
+        if (this.host.state.completing.get(id) === completion) this.host.state.completing.delete(id);
+        this.render();
+      };
+      // A hidden pane may not deliver animation events.
+      const timer = window.setTimeout(finish, Math.max(0, completionDuration - elapsed) + 50);
+      this.completionAnimations.set(animation, timer);
+      animation.onfinish = animation.oncancel = finish;
+    }
+  }
+
+  private async completeTodo(todo: Todo, completed: boolean, animate: boolean): Promise<void> {
+    await this.withTodo(todo, async item => {
+      const completion: TodoCompletion | undefined = animate ? { status: item.status } : undefined;
+      if (completion) {
+        this.host.state.completing.set(item.id!, completion);
+        this.render();
+      }
+      try {
+        await this.save({ kind: "complete", id: item.id!, completed, completedAt: new Date().toISOString() });
+        if (completion) completion.startedAt = Date.now();
+      } catch (error) {
+        this.host.state.completing.delete(item.id!);
+        throw error;
+      }
+    });
+    // Saving can replace the render child; wake the current owner of pane state.
+    for (const listener of this.host.state.completionListeners) listener();
   }
 
   private renderCapture(): void {
@@ -539,13 +657,19 @@ export class TodosWidget extends MarkdownRenderChild {
   private renderTodo(parent: HTMLElement, todo: Todo, index: number): void {
     const state = this.host.state;
     const key = todo.id ?? `index-${this.data?.todos.indexOf(todo) ?? index}`;
-    const completed = todo.status === "completed";
+    const completion = state.completing.get(key);
+    const completing = !!completion;
+    const completed = todo.status === "completed" || completing;
     const moved = !!todo.rollover?.next;
     const row = element(parent, "article", `kanso-todo-row${completed ? " is-completed" : ""}${moved ? " is-moved" : ""}`);
     row.dataset.todo = key;
     row.dataset.focus = `row-${key}`;
     row.tabIndex = -1;
     row.style.setProperty("--kanso-todo-index", String(Math.min(index, 6)));
+    if (completing) {
+      row.classList.add("is-completing");
+      row.setAttribute("inert", "");
+    }
 
     const draft = state.draft;
     if (draft?.key === key && !moved) {
@@ -582,23 +706,22 @@ export class TodosWidget extends MarkdownRenderChild {
       checkbox.disabled = state.busy;
       checkbox.dataset.focus = `complete-${key}`;
       accessibleLabel(checkbox, completed ? `Reopen ${todo.title}` : `Complete ${todo.title}`);
-      checkbox.addEventListener("change", () => void this.withTodo(todo, item =>
-        this.save({
-          kind: "complete",
-          id: item.id!,
-          completed: checkbox.checked,
-          completedAt: new Date().toISOString(),
-        })));
+      let pointerActivated = false;
+      checkbox.addEventListener("click", event => { pointerActivated = event.detail > 0; });
+      checkbox.addEventListener("change", () => void this.completeTodo(
+        todo, checkbox.checked, checkbox.checked && pointerActivated && this.canAnimateCompletion(),
+      ));
     }
 
-    if (!completed && !moved) {
+    if ((!completed || completing) && !moved) {
+      const statusValue = completion?.status ?? todo.status;
       const status = button(
         main,
-        `Change status from ${todo.status} to ${todo.status === "todo" ? "doing" : "todo"}`,
+        `Change status from ${statusValue} to ${statusValue === "todo" ? "doing" : "todo"}`,
         undefined,
-        `kanso-todo-status is-${todo.status}`,
+        `kanso-todo-status is-${statusValue}`,
       );
-      status.textContent = todo.status.toUpperCase();
+      status.textContent = statusValue.toUpperCase();
       status.dataset.focus = `status-${key}`;
       status.disabled = state.busy;
       status.addEventListener("click", () => void this.withTodo(todo, item =>

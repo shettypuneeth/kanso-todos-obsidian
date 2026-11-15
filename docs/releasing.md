@@ -43,6 +43,15 @@ cursor positioning, and a 320px-wide list/menu without horizontal overflow.
 Real-keyboard dispatch, actual iOS/Android devices, the minimum Obsidian version,
 and the remaining launch gates above are not established by this record.
 
+On 15 November 2026, the 1.1.0 UX port passed 83 automated tests, the production
+build, and release checks. Desktop checks in the Playground vault covered the
+installed standalone plugin in Live Preview and Reading View: count badges,
+header controls, collapse, pointer-completion animation, persisted completion,
+and reopening. Sample comments, unknown YAML fields, and task order were
+preserved. An isolated live widget also passed 640px and 320px layout checks
+and native fade/height-collapse checks. Temporary notes and test artifacts were
+removed. This record does not establish new real-device mobile validation.
+
 ### Maintainer release sign-off
 
 On 25 October 2026, the maintainer confirmed the remaining manual launch gates

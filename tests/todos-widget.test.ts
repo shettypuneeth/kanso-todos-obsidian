@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { readTodos, type Todo, type TodoReference } from "../src/todos/model";
+import * as model from "../src/todos/model";
 import { mutateTodoNote } from "../src/todos/persistence";
 import {
   createTodoWidgetState,
@@ -32,6 +33,46 @@ const next: TodoReference = {
   note: "Daily/2026-10-28.md", block_id: "kt_next", todo_id: "td_next", date: "2026-10-28",
 };
 const settle = () => new Promise(resolve => setTimeout(resolve, 0));
+const widgets: TodosWidget[] = [];
+
+function mockAnimations(reducedMotion = false, view = window) {
+  const originalMatchMedia = Object.getOwnPropertyDescriptor(view, "matchMedia");
+  Object.defineProperty(view, "matchMedia", {
+    configurable: true,
+    value: vi.fn(() => ({ matches: reducedMotion })),
+  });
+  const animations: { node: HTMLElement; animation: Animation }[] = [];
+  const animate = vi.fn(function (this: HTMLElement) {
+    const animation = { currentTime: 0, onfinish: null, oncancel: null, cancel: vi.fn() } as unknown as Animation;
+    animations.push({ node: this, animation });
+    return animation;
+  });
+  const original = Object.getOwnPropertyDescriptor(view.HTMLElement.prototype, "animate");
+  Object.defineProperty(view.HTMLElement.prototype, "animate", { configurable: true, value: animate });
+  animationRestorers.push(() => {
+    if (originalMatchMedia) Object.defineProperty(view, "matchMedia", originalMatchMedia);
+    else Reflect.deleteProperty(view, "matchMedia");
+    if (original) Object.defineProperty(view.HTMLElement.prototype, "animate", original);
+    else Reflect.deleteProperty(view.HTMLElement.prototype, "animate");
+  });
+  return {
+    animate,
+    animations,
+    finish: (id: string) => {
+      const animation = [...animations].reverse().find(entry => entry.node.dataset.todo === id && entry.animation.onfinish)?.animation;
+      expect(animation).toBeDefined();
+      animation!.onfinish!.call(animation!, new Event("finish") as AnimationPlaybackEvent);
+    },
+  };
+}
+
+const animationRestorers: (() => void)[] = [];
+
+function pointerComplete(root: HTMLElement, id = "td_active"): void {
+  const checkbox = root.querySelector<HTMLInputElement>(`[data-todo="${id}"] .kanso-todo-checkbox`)!;
+  const MouseEvent = root.ownerDocument.defaultView!.MouseEvent;
+  checkbox.dispatchEvent(new MouseEvent("click", { bubbles: true, detail: 1 }));
+}
 
 function accessibleName(node: Element): string | null {
   const id = node.getAttribute("aria-labelledby");
@@ -82,6 +123,7 @@ function setup(
   };
 
   const widget = new TodosWidget(root, source, host);
+  widgets.push(widget);
   widget.onload();
 
   const click = (label: string) => {
@@ -128,7 +170,13 @@ function setup(
   };
 }
 
-afterEach(() => document.body.replaceChildren());
+afterEach(() => {
+  for (const widget of widgets.splice(0)) widget.onunload();
+  for (const restore of animationRestorers.splice(0)) restore();
+  vi.restoreAllMocks();
+  vi.useRealTimers();
+  document.body.replaceChildren();
+});
 
 describe("todos widget", () => {
   function popoutDocument(): Document {
@@ -138,6 +186,248 @@ describe("todos widget", () => {
     installDomExtensions(doc);
     return doc;
   }
+
+  it("keeps total counts visible and header controls ordered when expanded or collapsed", async () => {
+    const view = setup([active, completed]);
+    await settle();
+    expect(view.root.querySelector(".kanso-todo-count")?.textContent).toBe("2");
+    const actions = view.root.querySelector(".kanso-todo-header-actions")!;
+    expect([...actions.querySelectorAll<HTMLButtonElement>("button")].map(node => node.dataset.focus)).toEqual(["add", "collapse"]);
+    view.click("Collapse Tasks");
+    expect(view.root.querySelector(".kanso-todo-count")?.textContent).toBe("2");
+    expect(view.root.querySelector(".kanso-todo-add, .kanso-todo-row")).toBeNull();
+    view.click("Expand Tasks");
+    expect(view.root.querySelector(".kanso-todo-count")?.textContent).toBe("2");
+  });
+
+  it("reconciles startup without rebuilding unchanged rows or reparsing UI-only changes", async () => {
+    const parse = vi.spyOn(model, "readTodos");
+    const view = setup([active], { deferReady: true });
+    const row = view.root.querySelector(".kanso-todo-row");
+    expect(parse).toHaveBeenCalledTimes(1);
+    view.ready();
+    await settle();
+    expect(view.host.read).toHaveBeenCalledTimes(1);
+    expect(view.root.querySelector(".kanso-todo-row")).toBe(row);
+    view.click("Collapse Tasks");
+    view.click("Expand Tasks");
+    expect(parse).toHaveBeenCalledTimes(1);
+    vi.mocked(view.host.read).mockResolvedValueOnce(JSON.stringify({
+      version: 2, id: "kt_test", todos: [{ ...active, title: "Changed task" }],
+    }));
+    await view.widget.refresh();
+    expect(parse).toHaveBeenCalledTimes(2);
+    expect(view.root.textContent).toContain("Changed task");
+  });
+
+  it("reuses validated initial data without skipping the authoritative read", async () => {
+    const view = setup([active], { deferReady: true });
+    view.widget.onunload();
+    const source = JSON.stringify(view.data());
+    const data = readTodos(source).data;
+    const parse = vi.spyOn(model, "readTodos");
+    const widget = new TodosWidget(view.root, source, view.host, data);
+    widgets.push(widget);
+    widget.onload();
+    const row = view.root.querySelector(".kanso-todo-row");
+    view.ready();
+    await settle();
+    expect(view.host.read).toHaveBeenCalledTimes(1);
+    expect(view.root.querySelector(".kanso-todo-row")).toBe(row);
+    expect(parse).not.toHaveBeenCalled();
+  });
+
+  it("saves pointer completion immediately and retains the row until its exit finishes", async () => {
+    const motion = mockAnimations();
+    const view = setup([active]);
+    await settle();
+    pointerComplete(view.root);
+    expect(view.host.save).toHaveBeenCalledWith(expect.objectContaining({ kind: "complete", completed: true }));
+    expect(view.root.querySelector(".is-completing.is-completed")).not.toBeNull();
+    await settle();
+    expect(view.data().todos[0]?.status).toBe("completed");
+    expect(view.state.busy).toBe(false);
+    expect(view.root.querySelector(".is-completing")?.hasAttribute("inert")).toBe(true);
+    expect(view.root.querySelector(".is-completing .kanso-todo-status")?.textContent).toBe("TODO");
+    expect(view.root.querySelector(".kanso-todo-all-done")).toBeNull();
+    expect(motion.animate).toHaveBeenCalledWith(
+      expect.arrayContaining([expect.objectContaining({ opacity: 0, transform: "translateY(-6px)" }),
+        expect.objectContaining({ height: "0px", paddingTop: "0px", paddingBottom: "0px" })]),
+      expect.objectContaining({ duration: 480 }),
+    );
+    motion.finish("td_active");
+    expect(view.root.querySelector(".kanso-todo-row")).toBeNull();
+    expect(view.root.querySelector(".kanso-todo-all-done")?.textContent).toBe("All done");
+    expect(view.root.querySelector(".kanso-completed-count")?.textContent).toBe("1");
+    expect(view.state.completing.size).toBe(0);
+  });
+
+  it("allows overlapping exits and keeps focus on a surviving row in a pop-out", async () => {
+    const doc = popoutDocument();
+    const motion = mockAnimations(false, doc.defaultView!);
+    const view = setup([active, { ...active, id: "td_second", title: "Next task" }], { document: doc });
+    await settle();
+    view.root.querySelector<HTMLInputElement>(".kanso-todo-checkbox")!.focus();
+    pointerComplete(view.root);
+    await settle();
+    expect(doc.activeElement?.closest("[data-todo]")?.getAttribute("data-todo")).toBe("td_second");
+    pointerComplete(view.root, "td_second");
+    await settle();
+    expect(view.host.save).toHaveBeenCalledTimes(2);
+    expect(view.root.querySelectorAll(".is-completing")).toHaveLength(2);
+    motion.finish("td_active");
+    motion.finish("td_second");
+    expect(view.root.querySelectorAll(".kanso-todo-row")).toHaveLength(0);
+    expect(view.root.querySelector(".kanso-completed-count")?.textContent).toBe("2");
+  });
+
+  it("moves focus to an enabled header control when the final active row exits", async () => {
+    const motion = mockAnimations();
+    const view = setup([active]);
+    await settle();
+    view.root.querySelector<HTMLInputElement>(".kanso-todo-checkbox")!.focus();
+    pointerComplete(view.root);
+    await settle();
+    const focused = document.activeElement as HTMLButtonElement;
+    expect(view.root.querySelector(".kanso-todo-header")?.contains(focused)).toBe(true);
+    expect(focused.disabled).toBe(false);
+    motion.finish("td_active");
+    expect((document.activeElement as HTMLElement).dataset.focus).toBe(focused.dataset.focus);
+  });
+
+  it.each(["keyboard", "reduced motion", "no animation API"])("completes instantly for %s", async mode => {
+    const motion = mockAnimations(mode === "reduced motion");
+    if (mode === "no animation API") Reflect.deleteProperty(HTMLElement.prototype, "animate");
+    const view = setup([active]);
+    await settle();
+    if (mode === "keyboard") view.root.querySelector<HTMLInputElement>(".kanso-todo-checkbox")!.click();
+    else pointerComplete(view.root);
+    await settle();
+    expect(view.data().todos[0]?.status).toBe("completed");
+    expect(view.root.querySelector(".kanso-todo-row")).toBeNull();
+    expect(view.state.completing.size).toBe(0);
+    expect(motion.animations).toHaveLength(0);
+  });
+
+  it.each([false, true])("settles a completion save after remount (failed: %s)", async fails => {
+    const motion = mockAnimations();
+    const view = setup([active]);
+    await settle();
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    let release!: () => void;
+    const pending = new Promise<void>(resolve => { release = resolve; });
+    const save = vi.mocked(view.host.save).getMockImplementation()!;
+    vi.mocked(view.host.save).mockImplementationOnce(async mutation => {
+      await pending;
+      if (fails) throw new Error("Save failed after remount");
+      return save(mutation);
+    });
+    pointerComplete(view.root);
+    expect(motion.animations).toHaveLength(0);
+    view.widget.onunload();
+    const restored = new TodosWidget(view.root, JSON.stringify(view.data()), view.host);
+    widgets.push(restored);
+    restored.onload();
+    await settle();
+    release();
+    await settle();
+    if (fails) {
+      expect(view.root.querySelector(".is-completing")).toBeNull();
+      expect(view.root.querySelector(".kanso-message")?.textContent).toBe("Save failed after remount");
+      expect(view.root.querySelector<HTMLInputElement>(".kanso-todo-checkbox")?.checked).toBe(false);
+      expect(motion.animations).toHaveLength(0);
+    } else {
+      expect(view.root.querySelector(".is-completing")).not.toBeNull();
+      motion.finish("td_active");
+      expect(view.root.querySelector(".kanso-todo-row")).toBeNull();
+    }
+  });
+
+  it("continues an exit across refresh and remount without restarting its clock", async () => {
+    const motion = mockAnimations();
+    const view = setup([active]);
+    await settle();
+    const now = Date.now();
+    vi.spyOn(Date, "now").mockReturnValue(now);
+    pointerComplete(view.root);
+    await settle();
+    vi.mocked(Date.now).mockReturnValue(now + 80);
+    await view.widget.refresh();
+    expect(motion.animations.at(-1)?.animation.currentTime).toBe(80);
+    const oldAnimation = motion.animations.at(-1)!.animation;
+    view.widget.onunload();
+    expect(oldAnimation.cancel).toHaveBeenCalled();
+    expect(oldAnimation.onfinish).toBeNull();
+    const restored = new TodosWidget(view.root, JSON.stringify(view.data()), view.host);
+    widgets.push(restored);
+    restored.onload();
+    await settle();
+    expect(motion.animations.at(-1)?.animation.currentTime).toBe(80);
+    motion.finish("td_active");
+    expect(view.root.querySelector(".is-completing")).toBeNull();
+  });
+
+  it("removes retained rows even if the browser never delivers an animation event", async () => {
+    mockAnimations();
+    vi.useFakeTimers();
+    const view = setup([active], { deferReady: true });
+    pointerComplete(view.root);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(view.root.querySelector(".is-completing")).not.toBeNull();
+    await vi.advanceTimersByTimeAsync(531);
+    expect(view.root.querySelector(".kanso-todo-row")).toBeNull();
+    expect(view.state.completing.size).toBe(0);
+  });
+
+  it("initializes legacy IDs without duplicating exiting rows in an open completed section", async () => {
+    const motion = mockAnimations();
+    const view = setup([{ ...active, id: undefined }, completed]);
+    await settle();
+    view.click("Show completed tasks");
+    pointerComplete(view.root, "index-0");
+    await settle();
+    const id = view.data().todos[0]!.id!;
+    expect(view.state.completing.has(id)).toBe(true);
+    expect(view.root.querySelectorAll(`[data-todo="${id}"]`)).toHaveLength(1);
+    expect(view.root.querySelector(`.kanso-completed-list [data-todo="${id}"]`)).toBeNull();
+    motion.finish(id);
+    expect(view.root.querySelectorAll(`[data-todo="${id}"]`)).toHaveLength(1);
+    expect(view.root.querySelector(`.kanso-completed-list [data-todo="${id}"]`)).not.toBeNull();
+  });
+
+  it.each(["reopened", "deleted"])("cancels an exit when the task is externally %s", async change => {
+    const motion = mockAnimations();
+    const view = setup([active]);
+    await settle();
+    pointerComplete(view.root);
+    await settle();
+    const animation = motion.animations.at(-1)!.animation;
+    vi.mocked(view.host.read).mockResolvedValueOnce(JSON.stringify({
+      version: 2, todos: change === "deleted" ? [] : [active],
+    }));
+    await view.widget.refresh();
+    expect(view.state.completing.size).toBe(0);
+    expect(view.root.querySelector(".is-completing")).toBeNull();
+    expect(animation.cancel).toHaveBeenCalled();
+    expect(view.root.querySelectorAll(".kanso-todo-row")).toHaveLength(change === "deleted" ? 0 : 1);
+  });
+
+  it("does not animate reopening or externally completed tasks", async () => {
+    const motion = mockAnimations();
+    const view = setup([completed]);
+    await settle();
+    view.click("Show completed tasks");
+    pointerComplete(view.root, completed.id);
+    await settle();
+    expect(view.data().todos[0]?.status).toBe("todo");
+    vi.mocked(view.host.read).mockResolvedValueOnce(JSON.stringify({
+      version: 2, id: "kt_test", todos: [completed],
+    }));
+    await view.widget.refresh();
+    expect(view.root.querySelector(".kanso-completed-count")?.textContent).toBe("1");
+    expect(view.state.completing.size).toBe(0);
+    expect(motion.animations).toHaveLength(0);
+  });
 
   it("preserves a draft's focus and selection across refreshes in another window", async () => {
     const doc = popoutDocument();

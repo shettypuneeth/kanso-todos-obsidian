@@ -16,6 +16,10 @@ UI action -> host save -> locate the latest fence -> mutate/revalidate YAML ->
 replace the fence body -> refresh. There is no network or metadata service.
 Reading an empty template must not write initialization data.
 
+Startup reuses the adapter's validated data. The initial authoritative read
+retains DOM when valid source is unchanged; subsequent refreshes still reconcile
+transient completion/draft state. Parsed data is reused only for identical source.
+
 ## Data contract
 
 Root fields: `version: 2`, optional `id` and `title`, and optional `todos`. The default
@@ -56,10 +60,23 @@ semantics rather than converting through UTC.
   section is expanded. An all-completed list shows "All done".
 - The checkbox exclusively controls completion: checking sets `status: completed`
   and `completed_at`; unchecking always resets to `todo` and removes the timestamp.
+  Pointer completion checks and strikes through immediately and saves without
+  waiting for motion. After a successful save, the row fades and slides up 6px
+  over 220ms, then its height/padding and list gap collapse over 260ms. The
+  exiting row retains its status badge to avoid shifting the title sideways.
+  Exits are inert, pane-local state keyed by task ID; refresh/remount resumes
+  their clock instead of restarting them. Other tasks remain usable after the
+  save, while the exit runs. Failed saves restore the row and show the error.
+  Keyboard completion, reduced motion and unavailable animation APIs skip exits.
+  Reopening and external note changes do not trigger completion animations.
   The adjacent all-caps badge cycles active tasks between `todo` and `doing`.
   A same-sized neutral badge displays optional priority; clicking it cycles
   `P0` -> `P1` -> `P2` -> `P0`, while Edit can clear priority.
-- Collapse mounts only the heading and total count (including completed tasks).
+- The heading always shows the total count (including completed tasks) after the
+  title in a theme-accent badge: 16px high, 10px tabular text, 4px corners and a
+  6px title gap. Completed retains its smaller badge. Add and collapse sit on the
+  right, with collapse last.
+- Collapse mounts only the heading, total count and expand control.
   Clicking the collapsed header expands it. **Both collapse and completed-section
   expansion are transient pane state**; never persist
   them to plugin data or YAML.

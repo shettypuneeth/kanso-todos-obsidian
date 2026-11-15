@@ -9,7 +9,7 @@ import {
 } from "obsidian";
 import type { BlockTarget } from "./core/block";
 import type { InputKeys } from "./core/keys";
-import { readTodos, type TodoReference } from "./todos/model";
+import { readTodos, type TodoCollection, type TodoReference } from "./todos/model";
 import { locateTodoBlock, locateTodoEntry, mutateTodoNote, type TodoMutation } from "./todos/persistence";
 import {
   createTodoWidgetState,
@@ -83,14 +83,14 @@ export default class KansoTodosPlugin extends Plugin {
 
   private attachTodos(source: string, element: HTMLElement, context: MarkdownPostProcessorContext): void {
     const info = context.getSectionInfo(element);
-    let id: string | undefined;
+    let data: TodoCollection | undefined;
     try {
-      id = readTodos(source).data.id;
+      data = readTodos(source).data;
     } catch {
       // The widget renders the schema diagnostic without attempting a write.
     }
 
-    const target: BlockTarget = { id, line: info?.lineStart ?? -1, source };
+    const target: BlockTarget = { id: data?.id, line: info?.lineStart ?? -1, source };
     const pane = element.closest<HTMLElement>(".workspace-leaf") ?? element.ownerDocument.body;
     let states = this.todoPaneStates.get(pane);
     if (!states) {
@@ -140,7 +140,7 @@ export default class KansoTodosPlugin extends Plugin {
         }, 1000);
       },
     };
-    context.addChild(new TodosWidget(element, source, host));
+    context.addChild(new TodosWidget(element, source, host, data));
   }
 
   private async openTodoReference(reference: TodoReference): Promise<void> {

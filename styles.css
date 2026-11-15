@@ -30,7 +30,7 @@
     .cm-preview-code-block
     .kanso-todos
     .kanso-todo-header {
-    padding-inline-end: 40px;
+    padding-inline-end: 24px;
 }
 
 .kanso-todos button {
@@ -39,6 +39,7 @@
 
 .kanso-todos .kanso-todo-header,
 .kanso-todos .kanso-todo-heading,
+.kanso-todos .kanso-todo-header-actions,
 .kanso-todos .kanso-todo-main,
 .kanso-todos .kanso-todo-meta,
 .kanso-todos .kanso-todo-actions,
@@ -69,12 +70,18 @@
 .kanso-todos .kanso-todo-heading {
     min-width: 0;
     gap: 5px;
+    transform: translate(2px, 2px);
+}
+
+.kanso-todos .kanso-todo-header-actions {
+    flex: none;
+    gap: 2px;
 }
 
 .kanso-todos .kanso-todo-heading-copy {
     display: flex;
     flex: 1 1 auto;
-    align-items: baseline;
+    align-items: center;
     gap: 6px;
     min-width: 0;
 }
@@ -87,8 +94,22 @@
 }
 
 .kanso-todos .kanso-todo-count {
-    color: var(--text-muted);
-    font-size: var(--font-ui-small);
+    display: inline-grid;
+    flex: none;
+    width: auto;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border: 0;
+    border-radius: 4px;
+    place-items: center;
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+    font-size: 10px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    text-align: center;
 }
 
 .kanso-todos .kanso-todo-collapse,
@@ -107,11 +128,6 @@
     cursor: pointer;
 }
 
-.kanso-todos .kanso-todo-collapse {
-    width: 28px;
-    min-width: 28px;
-}
-
 .kanso-todos :is(.kanso-todo-collapse, .kanso-icon-button):not(:disabled):hover {
     background: var(--background-modifier-hover);
     color: var(--text-normal);
@@ -123,7 +139,8 @@
 }
 
 .kanso-todos .kanso-todo-list {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 2px;
 }
 
@@ -257,6 +274,13 @@
 .kanso-todos .kanso-todo-row.is-completed .kanso-todo-title {
     color: var(--text-muted);
     text-decoration: line-through;
+}
+
+.kanso-todos .kanso-todo-row.is-completing {
+    min-height: 0;
+    overflow: hidden;
+    pointer-events: none;
+    transition: none;
 }
 
 .kanso-todos .kanso-todo-row.is-moved .kanso-todo-title {
@@ -779,19 +803,6 @@
         height: 36px;
         min-height: 36px;
         padding-inline: 14px;
-    }
-
-    .kanso-todos .kanso-todo-collapse {
-        margin-inline-end: -18px;
-    }
-
-    .kanso-todos .kanso-todo-collapse svg {
-        transform: translateX(-8px);
-    }
-
-    .kanso-todos .kanso-todo-collapse:not(:disabled):is(:hover, :active) {
-        background: transparent;
-        box-shadow: none;
     }
 
     .kanso-todos .kanso-todo-collapse,

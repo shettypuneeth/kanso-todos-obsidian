@@ -14,6 +14,8 @@ theme-native widget, with status, priority, due dates, and links to source notes
 - Set due dates with local-calendar labels and overdue highlighting.
 - Link tasks to source notes and open them directly.
 - Collapse a list or expand its completed tasks independently in each pane.
+- See the total task count beside the heading, even when the list is expanded.
+- Complete tasks with a smooth exit animation that respects reduced motion.
 
 If you've found Kanso Todos useful, please consider
 [buying me a coffee](https://buymeacoffee.com/pshetty).
@@ -69,6 +71,9 @@ The first task you add creates the list in the YAML. An explicitly supplied
 ## Working with tasks
 
 Use the checkbox to complete a task; reopening it resets its status to Todo.
+Pointer completion checks and strikes through immediately, saves without waiting
+for motion, then fades and collapses the row. Keyboard completion and
+reduced-motion settings skip the animation; failed saves restore the task.
 Select the Todo/Doing badge to switch active status. Select a priority badge
 to cycle P0, P1, and P2; use Edit to set or clear optional properties.
 
@@ -82,7 +87,8 @@ while you edit, your draft is retained. Review the conflict before saving again:
 the second explicit save replaces the newer editable values.
 
 List collapse and the Completed section are temporary pane-local state, not
-settings synchronized between devices. There is no settings page.
+settings synchronized between devices. The heading count includes active and
+completed tasks; Add and collapse controls sit on the right. There is no settings page.
 
 ## Storage and compatibility
 
