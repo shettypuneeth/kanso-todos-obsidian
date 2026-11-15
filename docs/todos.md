@@ -72,11 +72,12 @@ semantics rather than converting through UTC.
   The adjacent all-caps badge cycles active tasks between `todo` and `doing`.
   A same-sized neutral badge displays optional priority; clicking it cycles
   `P0` -> `P1` -> `P2` -> `P0`, while Edit can clear priority.
-- The heading always shows the total count (including completed tasks) after the
+- The heading always shows the incomplete count (`todo` and `doing`) after the
   title in a theme-accent badge: 16px high, 10px tabular text, 4px corners and a
-  6px title gap. Completed retains its smaller badge. Add and collapse sit on the
+  6px title gap. Successfully completed tasks are excluded even while their rows
+  animate out. Completed retains its smaller badge. Add and collapse sit on the
   right, with collapse last.
-- Collapse mounts only the heading, total count and expand control.
+- Collapse mounts only the heading, incomplete count and expand control.
   Clicking the collapsed header expands it. **Both collapse and completed-section
   expansion are transient pane state**; never persist
   them to plugin data or YAML.

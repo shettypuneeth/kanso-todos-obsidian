@@ -312,7 +312,7 @@ export class TodosWidget extends MarkdownRenderChild {
     const headingLabel = element(headingCopy, "span", "kanso-todo-heading-label", title);
     headingLabel.id = `kanso-todo-heading-${crypto.randomUUID()}`;
     this.root.setAttribute("aria-labelledby", headingLabel.id);
-    element(headingCopy, "span", "kanso-todo-count", String(this.data.todos.length));
+    element(headingCopy, "span", "kanso-todo-count", String(this.data.todos.filter(todo => todo.status !== "completed").length));
 
     if (state.collapsed) {
       if (hadFocus && state.focus) this.focus(state.focus.key, state.focus.start, state.focus.end);

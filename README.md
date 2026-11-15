@@ -14,7 +14,7 @@ theme-native widget, with status, priority, due dates, and links to source notes
 - Set due dates with local-calendar labels and overdue highlighting.
 - Link tasks to source notes and open them directly.
 - Collapse a list or expand its completed tasks independently in each pane.
-- See the total task count beside the heading, even when the list is expanded.
+- See the incomplete task count beside the heading, even when the list is expanded.
 - Complete tasks with a smooth exit animation that respects reduced motion.
 
 If you've found Kanso Todos useful, please consider
@@ -22,9 +22,9 @@ If you've found Kanso Todos useful, please consider
 
 ## Demo
 
-Add a task with priority and a due date, complete it, and collapse the list:
+Add tasks with priorities and due dates, edit them inline, and mark them complete:
 
-![Adding, completing, and collapsing tasks](assets/kanso-todos.gif)
+![Adding, editing, and completing tasks](assets/kanso-todos.gif)
 
 ## Installation
 
@@ -87,8 +87,9 @@ while you edit, your draft is retained. Review the conflict before saving again:
 the second explicit save replaces the newer editable values.
 
 List collapse and the Completed section are temporary pane-local state, not
-settings synchronized between devices. The heading count includes active and
-completed tasks; Add and collapse controls sit on the right. There is no settings page.
+settings synchronized between devices. The heading counts only Todo and Doing
+tasks, excluding completed tasks even while they animate out. Add and collapse
+controls sit on the right. There is no settings page.
 
 ## Storage and compatibility
 

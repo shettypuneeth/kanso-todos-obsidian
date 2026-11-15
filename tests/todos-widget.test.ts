@@ -187,17 +187,21 @@ describe("todos widget", () => {
     return doc;
   }
 
-  it("keeps total counts visible and header controls ordered when expanded or collapsed", async () => {
-    const view = setup([active, completed]);
+  it.each([
+    [[active, { ...active, id: "td_doing", status: "doing" }, completed], "2"],
+    [[completed], "0"],
+    [[], "0"],
+  ] as const)("counts only incomplete tasks in expanded and collapsed headers: %j", async (todos, count) => {
+    const view = setup([...todos]);
     await settle();
-    expect(view.root.querySelector(".kanso-todo-count")?.textContent).toBe("2");
+    expect(view.root.querySelector(".kanso-todo-count")?.textContent).toBe(count);
     const actions = view.root.querySelector(".kanso-todo-header-actions")!;
     expect([...actions.querySelectorAll<HTMLButtonElement>("button")].map(node => node.dataset.focus)).toEqual(["add", "collapse"]);
     view.click("Collapse Tasks");
-    expect(view.root.querySelector(".kanso-todo-count")?.textContent).toBe("2");
+    expect(view.root.querySelector(".kanso-todo-count")?.textContent).toBe(count);
     expect(view.root.querySelector(".kanso-todo-add, .kanso-todo-row")).toBeNull();
     view.click("Expand Tasks");
-    expect(view.root.querySelector(".kanso-todo-count")?.textContent).toBe("2");
+    expect(view.root.querySelector(".kanso-todo-count")?.textContent).toBe(count);
   });
 
   it("reconciles startup without rebuilding unchanged rows or reparsing UI-only changes", async () => {
@@ -246,6 +250,7 @@ describe("todos widget", () => {
     expect(view.root.querySelector(".is-completing.is-completed")).not.toBeNull();
     await settle();
     expect(view.data().todos[0]?.status).toBe("completed");
+    expect(view.root.querySelector(".kanso-todo-count")?.textContent).toBe("0");
     expect(view.state.busy).toBe(false);
     expect(view.root.querySelector(".is-completing")?.hasAttribute("inert")).toBe(true);
     expect(view.root.querySelector(".is-completing .kanso-todo-status")?.textContent).toBe("TODO");
@@ -333,6 +338,7 @@ describe("todos widget", () => {
     await settle();
     if (fails) {
       expect(view.root.querySelector(".is-completing")).toBeNull();
+      expect(view.root.querySelector(".kanso-todo-count")?.textContent).toBe("1");
       expect(view.root.querySelector(".kanso-message")?.textContent).toBe("Save failed after remount");
       expect(view.root.querySelector<HTMLInputElement>(".kanso-todo-checkbox")?.checked).toBe(false);
       expect(motion.animations).toHaveLength(0);
@@ -420,11 +426,13 @@ describe("todos widget", () => {
     pointerComplete(view.root, completed.id);
     await settle();
     expect(view.data().todos[0]?.status).toBe("todo");
+    expect(view.root.querySelector(".kanso-todo-count")?.textContent).toBe("1");
     vi.mocked(view.host.read).mockResolvedValueOnce(JSON.stringify({
       version: 2, id: "kt_test", todos: [completed],
     }));
     await view.widget.refresh();
     expect(view.root.querySelector(".kanso-completed-count")?.textContent).toBe("1");
+    expect(view.root.querySelector(".kanso-todo-count")?.textContent).toBe("0");
     expect(view.state.completing.size).toBe(0);
     expect(motion.animations).toHaveLength(0);
   });
@@ -588,7 +596,7 @@ describe("todos widget", () => {
 
     expect(view.state.collapsed).toBe(true);
     expect(view.root.classList.contains("is-collapsed")).toBe(true);
-    expect(view.root.querySelector(".kanso-todo-count")?.textContent).toBe("2");
+    expect(view.root.querySelector(".kanso-todo-count")?.textContent).toBe("1");
     expect(view.root.querySelector(".kanso-todo-list")).toBeNull();
     expect(view.root.querySelector(".kanso-completed-toggle")).toBeNull();
     expect(view.root.querySelector(".kanso-todo-add")).toBeNull();

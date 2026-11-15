@@ -52,6 +52,13 @@ preserved. An isolated live widget also passed 640px and 320px layout checks
 and native fade/height-collapse checks. Temporary notes and test artifacts were
 removed. This record does not establish new real-device mobile validation.
 
+Later on 15 November 2026, the 1.1.1 incomplete-count patch passed 85 automated
+tests, the production build, and release checks. The installed Playground build's
+seven visible widgets were checked against their incomplete task counts,
+including zero-count lists. The refreshed screenshot and 24.84-second GIF were
+reviewed for legibility, sample-only content, and agreement with the new count
+behavior. The demo caption now describes the recorded add/edit/complete flow.
+
 ### Maintainer release sign-off
 
 On 25 October 2026, the maintainer confirmed the remaining manual launch gates
